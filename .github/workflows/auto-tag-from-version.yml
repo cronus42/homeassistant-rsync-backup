@@ -1,0 +1,46 @@
+name: Auto tag from add-on version
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  tag-from-config:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # need full history and tags
+
+      - name: Read version from rsync-backup/config.yaml
+        id: version
+        run: |
+          VERSION=$(sed -n 's/^version: "\(.*\)"/\1/p' rsync-backup/config.yaml)
+          if [ -z "$VERSION" ]; then
+            echo "Could not extract version from rsync-backup/config.yaml" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag if needed
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          echo "Detected version: ${{ steps.version.outputs.version }} (tag: $TAG)"
+
+          # If the tag already exists (local or fetched), do nothing.
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; nothing to do."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
