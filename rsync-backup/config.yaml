@@ -1,7 +1,7 @@
 name: "Rsync Backup Sync"
 slug: rsync_backup
 description: "Sync Home Assistant backups to a remote host using rsync over SSH."
-version: "0.1.0"
+version: "0.2.0"
 arch:
   - amd64
   - aarch64

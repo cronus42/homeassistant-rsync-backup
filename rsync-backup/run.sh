@@ -89,11 +89,13 @@ if [ -n "${KNOWN_HOSTS_OPT}" ]; then
   chmod 600 "${KNOWN_HOSTS_PATH}"
 fi
 
-SSH_BASE_OPTS="-i ${KEY_PATH} -p ${REMOTE_PORT} -o StrictHostKeyChecking=yes"
+# Base SSH options: identity and port; host-key policy depends on whether known_hosts is configured.
+SSH_BASE_OPTS="-i ${KEY_PATH} -p ${REMOTE_PORT}"
 if [ -f "${KNOWN_HOSTS_PATH}" ]; then
-  SSH_BASE_OPTS="${SSH_BASE_OPTS} -o UserKnownHostsFile=${KNOWN_HOSTS_PATH}"
+  # Strict checking against the provided known_hosts file.
+  SSH_BASE_OPTS="${SSH_BASE_OPTS} -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${KNOWN_HOSTS_PATH}"
 else
-  # Fall back to accepting new host keys automatically if no known_hosts was provided.
+  # Accept new host keys automatically and remember them for future connections.
   SSH_BASE_OPTS="${SSH_BASE_OPTS} -o StrictHostKeyChecking=accept-new"
 fi
 
@@ -103,8 +105,9 @@ trap 'log INFO "Received termination signal, exiting."; exit 0' TERM INT
 
 while true; do
   log INFO "Running rsync sync of /backup -> ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}"
-  if ! rsync -avz --delete -e "ssh ${SSH_BASE_OPTS}" /backup/ "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"; then
-    rc=$?
+  rsync -avz --delete -e "ssh ${SSH_BASE_OPTS}" /backup/ "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"
+  rc=$?
+  if [ "${rc}" -ne 0 ]; then
     log ERROR "rsync failed with exit code ${rc}."
     # Avoid hammering the remote if credentials or connectivity are broken.
     sleep 60
