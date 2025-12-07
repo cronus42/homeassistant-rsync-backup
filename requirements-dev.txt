@@ -1,0 +1,2 @@
+pre-commit
+# shellcheck itself is typically installed via system package manager; this file is for Python tooling only.

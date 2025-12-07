@@ -1,0 +1,43 @@
+name: "Rsync Backup Sync"
+slug: rsync_backup
+description: "Sync Home Assistant backups to a remote host using rsync over SSH."
+version: "0.1.0"
+arch:
+  - amd64
+  - aarch64
+startup: services
+boot: auto
+backup: true
+
+# Mount the Home Assistant backup directory read-only at /backup inside the add-on container.
+map:
+  - backup:ro
+
+hassio_api: false
+homeassistant_api: false
+ingress: false
+panel_icon: "mdi:cloud-upload"
+
+options:
+  remote_host: "example.com"
+  remote_port: 22
+  remote_user: "ha-backup"
+  remote_path: "/backups/homeassistant"
+  sync_interval_minutes: 60
+  log_level: "INFO"
+  use_generated_key: true
+  uploaded_private_key: ""
+  known_hosts: ""
+
+schema:
+  remote_host: str
+  remote_port: int
+  remote_user: str
+  remote_path: str
+  sync_interval_minutes: int
+  log_level: list(DEBUG|INFO|WARNING|ERROR)
+  use_generated_key: bool
+  uploaded_private_key: password
+  known_hosts: str
+
+image: "ghcr.io/cronus42/homeassistant-rsync-backup-{arch}"
