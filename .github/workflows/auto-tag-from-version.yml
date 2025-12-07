@@ -29,13 +29,15 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create and push tag if needed
+        id: ensure-tag
         run: |
           TAG="v${{ steps.version.outputs.version }}"
           echo "Detected version: ${{ steps.version.outputs.version }} (tag: $TAG)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-          # If the tag already exists (local or fetched), do nothing.
+          # If the tag already exists (local or fetched), do nothing for tagging.
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag $TAG already exists; nothing to do."
+            echo "Tag $TAG already exists; nothing to do for tagging."
             exit 0
           fi
 
@@ -44,3 +46,12 @@ jobs:
 
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.ensure-tag.outputs.tag }}
+          name: "Rsync Backup v${{ steps.version.outputs.version }}"
+          body: "Automated release for version ${{ steps.version.outputs.version }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
